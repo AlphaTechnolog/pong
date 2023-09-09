@@ -189,21 +189,27 @@ inline static void after_scoring(struct Ball *ball) {
 static void check_point(struct Ball *ball) {
     if (ball->pos.x <= WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_RIGHT));
+        load_soundeffect("score");
         after_scoring(ball);
     }
 
     if (ball->pos.x + ball->size.x >= ball->window->width - WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_LEFT));
+        load_soundeffect("score");
         after_scoring(ball);
     }
 }
 
 static void check_out_of_bounds(struct Ball *ball) {
-    if (ball->pos.y <= 0)
+    if (ball->pos.y <= 0) {
         invert_ball_dir(ball, ball->dir.vertical_dir);
+        load_soundeffect("ball-rebound");
+    }
 
-    if (ball->pos.y + ball->size.y >= ball->window->height)
+    if (ball->pos.y + ball->size.y >= ball->window->height) {
         invert_ball_dir(ball, ball->dir.vertical_dir);
+        load_soundeffect("ball-rebound");
+    }
 
     check_point(ball);
 }
