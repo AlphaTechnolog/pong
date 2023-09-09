@@ -235,6 +235,7 @@ void window_register_hook(struct Window *window, HOOK_T(window) *hook) {
     window->hooks[window->hooks_length - 1] = hook;
 }
 
+// FIXME: See the comment starting at 261-264
 void window_unregister_hook(struct Window *window, HOOK_T(window) *hook) {
     size_t hook_index = -1;
     for (size_t i = 0; i < window->hooks_length; ++i) {
@@ -254,8 +255,15 @@ void window_unregister_hook(struct Window *window, HOOK_T(window) *hook) {
     size_t i = 0;
     size_t j = 0;
     while (i < window->hooks_length) {
+        printf("%zu %zu\n", i, j);
         if (i == hook_index) {
             free(window->hooks[i]);
+            // still idk what to do here, i tested with this i++
+            // and it works with two hooks, but needs more testing as i still
+            // think that the j should be incremented too, but there're
+            // a few caveats to take in mind before doing it...
+            // also, doesn't works if there's only one hook registered
+            // im considering in dropping this function, seriously.
             i++;
             continue;
         }
