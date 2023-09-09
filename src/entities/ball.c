@@ -10,6 +10,7 @@
 #include "bar.h"
 
 #include "../game/window.h"
+#include "../audio/audio.h"
 #include "../lib/vector/vector.h"
 #include "../config.h"
 #include "../utils.h"
@@ -93,11 +94,13 @@ static void check_rebound(struct Ball *ball) {
 
     if (check_left_bar_collision(ball, &left_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_RIGHT;
+        load_soundeffect("bar-touch");
         INVERT_VERT_DIR(ball, &left_bar);
     }
 
     if (check_right_bar_collision(ball, &right_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_LEFT;
+        load_soundeffect("bar-touch");
         INVERT_VERT_DIR(ball, &right_bar);
     }
 }

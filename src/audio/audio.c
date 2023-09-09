@@ -9,7 +9,7 @@
 #include "audio.h"
 #include "../utils.h"
 
-char *soundtrack_resolve_filename(const char *partial_filename) {
+static char *soundtrack_resolve_filename(const char *partial_filename) {
 	const unsigned int length = 1
 		+ strlen("./music/soundtracks/")
 		+ strlen(partial_filename)
@@ -36,4 +36,32 @@ void stop_soundtrack_faded(Mix_Music *music) {
 	Mix_FadeOutMusic(500);
 	SDL_Delay(500);
 	Mix_FreeMusic(music);
+}
+
+static char *soundeffect_resolve_filename(const char *partial_filename) {
+	const unsigned int length = 1
+		+ strlen("./music/soundeffects/")
+		+ strlen(partial_filename)
+		+ strlen(".wav");
+
+	char *result = malloc(sizeof(char) * length);
+	ASSERT(result, "Cannot allocate memory!\n");
+	sprintf(result, "./music/soundeffects/%s.wav", partial_filename);
+	return result;
+}
+
+Mix_Chunk *load_soundeffect(const char *filename) {
+	char *file = soundeffect_resolve_filename(filename);
+
+	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
+	Mix_Chunk *chunk = Mix_LoadWAV(file);
+
+	ASSERT(Mix_PlayChannel(-1, chunk, 0) >= 0, "Can't play soundeffect %s\n",
+		filename);
+
+	return chunk;
+}
+
+void stop_soundeffect(Mix_Chunk *chunk) {
+	Mix_FreeChunk(chunk);
 }

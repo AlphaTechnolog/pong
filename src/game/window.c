@@ -297,6 +297,8 @@ void destroy_window(struct Window *window) {
     }
     free(window->hooks);
     free(window);
+    Mix_CloseAudio();
+    SDL_Quit();
 }
 
 Vector2d window_get_mouse_coords_vec2d(struct Window *window) {
