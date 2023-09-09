@@ -1,8 +1,11 @@
 #include <SDL2/SDL_rect.h>
 
+#include <time.h>
+
 #include "../entities/bar.h"
 #include "../game/window.h"
 #include "../lib/vector/vector.h"
+#include "../utils.h"
 
 #pragma once
 
@@ -19,6 +22,12 @@ struct Ball {
     Vector2d pos;
     Vector2d size;
     SDL_Rect collider;
+    uint8 invisible;
+    float velocity;
+
+    // invisibility effect timers.
+    time_t i_counter;
+    time_t i_timeout;
 
     struct Window *window;
     struct Bar **bars;

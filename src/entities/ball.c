@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "ball.h"
 #include "bar.h"
@@ -23,6 +24,9 @@ static void update_collider(struct Ball *ball) {
 }
 
 static void reset_ball(struct Ball *ball) {
+    ball->invisible = 1;
+    ball->i_counter = time(0);
+
     ball->pos = (Vector2d) {
         .x = (ball->window->width - ball->size.x) / 2,
         .y = (ball->window->height - ball->size.y) / 2
@@ -35,6 +39,11 @@ struct Ball *create_ball(struct Window *window, struct Bar **bars) {
     ball->window = window;
     ball->size = (Vector2d) {15.0f, 15.0f};
     ball->bars = bars;
+    ball->velocity = 4;
+
+    // invisibility effect.
+    ball->i_counter = time(0);
+    ball->i_timeout = 1;
 
     reset_ball(ball);
 
@@ -62,29 +71,34 @@ static int is_at_top_mid(struct Ball *ball, struct Bar *bar) {
     return ball->pos.y <= bar->pos.y + (bar->size.y / 2);
 }
 
+static void fill_bars(struct Ball *ball, struct Bar *left_bar, struct Bar *right_bar) {
+    for (size_t i = 0; i < MAX_BALL_BARS; ++i) {
+        if (IS_BAR_ID(ball->bars[i]->id, BAR_ID_LEFT))
+            *left_bar = *ball->bars[i];
+        if (IS_BAR_ID(ball->bars[i]->id, BAR_ID_RIGHT))
+            *right_bar = *ball->bars[i];
+    }
+}
+
 #define INVERT_VERT_DIR(ball, bar)                                 \
     (ball)->dir.vertical_dir = is_at_top_mid((ball), (bar))        \
         ? BALL_DIR_UP                                              \
         : BALL_DIR_DOWN;
 
 static void check_rebound(struct Ball *ball) {
-    struct Bar *left_bar = NULL;
-    struct Bar *right_bar = NULL;
-    for (size_t i = 0; i < MAX_BALL_BARS; ++i) {
-        if (IS_BAR_ID(ball->bars[i]->id, BAR_ID_LEFT))
-            left_bar = ball->bars[i];
-        if (IS_BAR_ID(ball->bars[i]->id, BAR_ID_RIGHT))
-            right_bar = ball->bars[i];
-    }
+    struct Bar left_bar;
+    struct Bar right_bar;
 
-    if (check_left_bar_collision(ball, left_bar)) {
+    fill_bars(ball, &left_bar, &right_bar);
+
+    if (check_left_bar_collision(ball, &left_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_RIGHT;
-        INVERT_VERT_DIR(ball, left_bar);
+        INVERT_VERT_DIR(ball, &left_bar);
     }
 
-    if (check_right_bar_collision(ball, right_bar)) {
+    if (check_right_bar_collision(ball, &right_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_LEFT;
-        INVERT_VERT_DIR(ball, right_bar);
+        INVERT_VERT_DIR(ball, &right_bar);
     }
 }
 
@@ -127,17 +141,24 @@ static struct Bar *find_bar(struct Bar **bars, const char *id) {
 #define AFTER_SCORING(ball)                                     \
     invert_ball_dir((ball), (ball)->dir.horizontal_dir);        \
     invert_ball_dir((ball), (ball)->dir.vertical_dir);          \
+    ball->velocity += 0.25f;                                    \
     reset_ball((ball));
 
 static void check_point(struct Ball *ball) {
     if (ball->pos.x <= WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_RIGHT));
         AFTER_SCORING(ball);
+        #if defined(DEBUG_BALL_VELOCITY)
+            printf("[BALL::DEBUG] new velocity -> %f\n", ball->velocity);
+        #endif
     }
 
     if (ball->pos.x + ball->size.x >= ball->window->width - WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_LEFT));
         AFTER_SCORING(ball);
+        #if defined(DEBUG_BALL_VELOCITY)
+            printf("[BALL::DEBUG] new velocity -> %f\n", ball->velocity);
+        #endif
     }
 }
 
@@ -154,25 +175,29 @@ static void check_out_of_bounds(struct Ball *ball) {
 }
 
 static void update_movement(struct Ball *ball) {
-    static const uint16 ACC = 4;
-
     if (BALL_IS_DIR(ball->dir.horizontal_dir, BALL_DIR_RIGHT))
-        ball->pos.x += ACC;
+        ball->pos.x += trunc(ball->velocity);
 
     if (BALL_IS_DIR(ball->dir.horizontal_dir, BALL_DIR_LEFT))
-        ball->pos.x -= ACC;
+        ball->pos.x -= trunc(ball->velocity);
 
     if (BALL_IS_DIR(ball->dir.vertical_dir, BALL_DIR_UP))
-        ball->pos.y -= ACC;
+        ball->pos.y -= trunc(ball->velocity);
 
     if (BALL_IS_DIR(ball->dir.vertical_dir, BALL_DIR_DOWN))
-        ball->pos.y += ACC;
+        ball->pos.y += trunc(ball->velocity);
 
     check_rebound(ball);
     check_out_of_bounds(ball);
 }
 
 void ball_render(struct Ball *ball) {
+    // check invisibility
+    if (ball->invisible == 1 && time(0) - ball->i_counter > ball->i_timeout)
+        ball->invisible = 0;
+
+    if (ball->invisible == 1) return;
+
     update_collider(ball);
     update_movement(ball);
     SDL_SetRenderDrawColor(ball->window->renderer, 0xff, 0xff, 0xff, 0xff);
