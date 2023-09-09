@@ -4,20 +4,22 @@
 
 #pragma once
 
-#define ASSERT(condition, message, ...) \
-	if (!(condition)) { \
-		printf(message, ##__VA_ARGS__); \
-		exit(EXIT_FAILURE); \
+#define ERROR(msg, ...) 							\
+	printf(msg, ##__VA_ARGS__);						\
+	exit(EXIT_FAILURE);
+
+#define ASSERT(condition, message, ...)				\
+	if (!(condition)) { 							\
+		ERROR(message, ##__VA_ARGS__);				\
 	}
 
-#define CHECK_FOR_FILE(file) \
-	ASSERT(access(file, F_OK) == 0, "Cannot open %s: No such file or directory\n", \
-		file);
+#define CHECK_FOR_FILE(file) 														\
+	ASSERT(access(file, F_OK) == 0, "Cannot open file: No such file or directory\n");	\
 
-#define CONFIGURE_SCENE(scene) \
-	if ((scene)->configured == 1) { \
-		return; \
-	} \
+#define CONFIGURE_SCENE(scene) 						\
+	if ((scene)->configured == 1) { 				\
+		return; 									\
+	} 												\
 	scene->configured = 1;
 
 // types for readability

@@ -12,7 +12,7 @@ void right_bar_on_window_dimensions_change(struct Window *window, void *meta, vo
 }
 
 struct Bar *create_right_bar(struct Window *window) {
-    struct Bar *right_bar = create_bar(window);
+    struct Bar *right_bar = create_bar(window, BAR_ID_RIGHT);
 
     right_bar->pos = (Vector2d) {
         .x = right_bar->window->width - WINGAP - right_bar->size.x,

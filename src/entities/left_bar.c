@@ -6,7 +6,7 @@
 #include "../config.h"
 
 struct Bar *create_left_bar(struct Window *window) {
-	struct Bar *left_bar = create_bar(window);
+	struct Bar *left_bar = create_bar(window, BAR_ID_LEFT);
 
 	left_bar->pos = (Vector2d) {
 		.x = WINGAP,

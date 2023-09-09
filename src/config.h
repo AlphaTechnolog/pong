@@ -14,3 +14,4 @@
 
 // debugging configuration
 #define DEBUG_HOOKS
+#define DEBUG_BAR_SCORING

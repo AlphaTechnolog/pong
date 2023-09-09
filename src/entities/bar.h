@@ -1,7 +1,10 @@
 #include <SDL2/SDL_rect.h>
 
+#include <string.h>
+
 #include "../game/window.h"
 #include "../lib/vector/vector.h"
+#include "../utils.h"
 
 #pragma once
 
@@ -18,11 +21,20 @@
 		.scancode = (down)											\
 	};
 
+#define BAR_ID_LEFT "left"
+#define BAR_ID_RIGHT "right"
+
+#define IS_BAR_ID(bar, pssblid) strcmp((bar), (pssblid)) == 0
+
 struct Bar {
 	Vector2d pos;
 	Vector2d size;
 	SDL_Rect collider;
+	uint128 score;
+
 	struct Window *window;
+
+	char *id;
 
 	struct {
 		char *where;
@@ -30,5 +42,5 @@ struct Bar {
 	} controls[2];
 };
 
-struct Bar *create_bar(struct Window *window);
+struct Bar *create_bar(struct Window *window, char *id);
 void bar_render(struct Bar *bar);

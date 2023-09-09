@@ -18,11 +18,13 @@ void bar_update_collider(struct Bar *bar) {
 	};
 }
 
-struct Bar *create_bar(struct Window *window) {
+struct Bar *create_bar(struct Window *window, char *id) {
 	struct Bar *bar = malloc(sizeof(struct Bar));
 
 	bar->window = window;
 	bar->pos = (Vector2d) {0.0f, 0.0f};
+	bar->score = 0;
+	bar->id = id;
 
 	bar->size = (Vector2d) {
 		.x = 15,
