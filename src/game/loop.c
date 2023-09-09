@@ -6,7 +6,8 @@
 #include "loop.h"
 
 #include "../config.h"
-#include "../scene/main.h"
+#include "../game/window.h"
+#include "../scene/menu.h"
 
 unsigned int quit = 0;
 unsigned int last_frame_time = 0;
@@ -69,8 +70,12 @@ void post_update(struct Window *window) {
 }
 
 void game_loop(struct Window *window) {
-    window->current_scene = create_main_scene();
+    window->current_scene = create_menu_scene();
     window->tmp_scene = window->current_scene;
+
+    #if defined(FULLSCREEN_BY_DEFAULT)
+        window_toggle_fullscreen(window);
+    #endif
 
     while (quit == 0) {
         handle_keys(window);

@@ -24,9 +24,19 @@ static void update_collider(struct Ball *ball) {
     };
 }
 
+inline static void reset_ball_velocity(struct Ball *ball) {
+    #if defined(DEFAULT_BALL_ACC)
+        ball->velocity = DEFAULT_BALL_ACC;
+    #else
+        ball->velocity = 4;
+    #endif
+}
+
 static void reset_ball(struct Ball *ball) {
     ball->invisible = 1;
     ball->i_counter = time(0);
+
+    reset_ball_velocity(ball);
 
     ball->pos = (Vector2d) {
         .x = (ball->window->width - ball->size.x) / 2,
@@ -40,7 +50,8 @@ struct Ball *create_ball(struct Window *window, struct Bar **bars) {
     ball->window = window;
     ball->size = (Vector2d) {15.0f, 15.0f};
     ball->bars = bars;
-    ball->velocity = 4;
+
+    reset_ball_velocity(ball);
 
     // invisibility effect.
     ball->i_counter = time(0);
@@ -56,17 +67,36 @@ struct Ball *create_ball(struct Window *window, struct Bar **bars) {
     return ball;
 }
 
+// colliders shouldn't be so near to the real object so the user
+// doesn't feels it buggy af when the ball gets a very high velocity
+#define OFFSET 20
+
+inline static void render_collider_boxes(struct Ball *ball, struct Bar *bar) {
+    SDL_Rect dst = {
+        .x = bar->pos.x,
+        .y = bar->pos.y - OFFSET,
+        .w = bar->size.x,
+        .h = bar->size.y + OFFSET * 2
+    };
+
+    // green box
+    SDL_SetRenderDrawColor(ball->window->renderer, 0x31, 0xde, 0x37, 0xff);
+    SDL_RenderDrawRect(ball->window->renderer, &dst);
+}
+
 static int check_left_bar_collision(struct Ball *ball, struct Bar *left_bar) {
     return ball->pos.x <= left_bar->pos.x + left_bar->size.x &&
-        ball->pos.y >= left_bar->pos.y &&
-        ball->pos.y <= left_bar->pos.y + left_bar->size.y;
+        ball->pos.y >= left_bar->pos.y - OFFSET &&
+        ball->pos.y <= left_bar->pos.y + left_bar->size.y + OFFSET;
 }
 
 static int check_right_bar_collision(struct Ball *ball, struct Bar *right_bar) {
     return ball->pos.x + ball->size.x >= right_bar->pos.x &&
-        ball->pos.y >= right_bar->pos.y &&
-        ball->pos.y <= right_bar->pos.y + right_bar->size.y;
+        ball->pos.y >= right_bar->pos.y - OFFSET &&
+        ball->pos.y <= right_bar->pos.y + right_bar->size.y + OFFSET;
 }
+
+#undef OFFSET
 
 static int is_at_top_mid(struct Ball *ball, struct Bar *bar) {
     return ball->pos.y <= bar->pos.y + (bar->size.y / 2);
@@ -81,10 +111,18 @@ static void fill_bars(struct Ball *ball, struct Bar *left_bar, struct Bar *right
     }
 }
 
-#define INVERT_VERT_DIR(ball, bar)                                 \
-    (ball)->dir.vertical_dir = is_at_top_mid((ball), (bar))        \
-        ? BALL_DIR_UP                                              \
+inline static void increase_velocity(struct Ball *ball, float factor) {
+    ball->velocity += factor;
+    #if defined(DEBUG_BALL_VELOCITY)
+        printf("[BALL::DEBUG] new velocity -> %f\n", ball->velocity);
+    #endif
+}
+
+inline static void invert_vert_dir(struct Ball *ball, struct Bar *bar) {
+    ball->dir.vertical_dir = is_at_top_mid(ball, bar)
+        ? BALL_DIR_UP
         : BALL_DIR_DOWN;
+}
 
 static void check_rebound(struct Ball *ball) {
     struct Bar left_bar;
@@ -94,18 +132,18 @@ static void check_rebound(struct Ball *ball) {
 
     if (check_left_bar_collision(ball, &left_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_RIGHT;
+        increase_velocity(ball, 0.25f);
         load_soundeffect("bar-touch");
-        INVERT_VERT_DIR(ball, &left_bar);
+        invert_vert_dir(ball, &left_bar);
     }
 
     if (check_right_bar_collision(ball, &right_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_LEFT;
+        increase_velocity(ball, 0.25f);
         load_soundeffect("bar-touch");
-        INVERT_VERT_DIR(ball, &right_bar);
+        invert_vert_dir(ball, &right_bar);
     }
 }
-
-#undef INVERT_VERT_DIR
 
 static void invert_ball_dir(struct Ball *ball, const char *dir) {
     if (BALL_IS_DIR(dir, BALL_DIR_RIGHT))
@@ -141,31 +179,24 @@ static struct Bar *find_bar(struct Bar **bars, const char *id) {
     return NULL;
 }
 
-#define AFTER_SCORING(ball)                                     \
-    invert_ball_dir((ball), (ball)->dir.horizontal_dir);        \
-    invert_ball_dir((ball), (ball)->dir.vertical_dir);          \
-    ball->velocity += 0.25f;                                    \
-    reset_ball((ball));
+inline static void after_scoring(struct Ball *ball) {
+    invert_ball_dir(ball, ball->dir.horizontal_dir);
+    invert_ball_dir(ball, ball->dir.vertical_dir);
+    increase_velocity(ball, 0.5f);
+    reset_ball(ball);
+}
 
 static void check_point(struct Ball *ball) {
     if (ball->pos.x <= WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_RIGHT));
-        AFTER_SCORING(ball);
-        #if defined(DEBUG_BALL_VELOCITY)
-            printf("[BALL::DEBUG] new velocity -> %f\n", ball->velocity);
-        #endif
+        after_scoring(ball);
     }
 
     if (ball->pos.x + ball->size.x >= ball->window->width - WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_LEFT));
-        AFTER_SCORING(ball);
-        #if defined(DEBUG_BALL_VELOCITY)
-            printf("[BALL::DEBUG] new velocity -> %f\n", ball->velocity);
-        #endif
+        after_scoring(ball);
     }
 }
-
-#undef AFTER_SCORING
 
 static void check_out_of_bounds(struct Ball *ball) {
     if (ball->pos.y <= 0)
@@ -195,6 +226,11 @@ static void update_movement(struct Ball *ball) {
 }
 
 void ball_render(struct Ball *ball) {
+    #if defined(RENDER_COLLIDERS_BOXES)
+        for (size_t i = 0; i < MAX_BALL_BARS; ++i)
+            render_collider_boxes(ball, ball->bars[i]);
+    #endif
+
     // check invisibility
     if (ball->invisible == 1 && time(0) - ball->i_counter > ball->i_timeout)
         ball->invisible = 0;

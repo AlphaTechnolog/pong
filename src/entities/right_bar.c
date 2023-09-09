@@ -5,9 +5,9 @@
 #include "../game/window.h"
 #include "../config.h"
 
+// re positionates the right bar `pos` vector when resizing the window object.
 void right_bar_on_window_dimensions_change(struct Window *window, void *meta, void *prm) {
     struct Bar *right_bar = (struct Bar *) meta;
-    Vector2d *win_coords = (Vector2d *) prm; 
     right_bar->pos.x = right_bar->window->width - WINGAP - right_bar->size.x;
 }
 
