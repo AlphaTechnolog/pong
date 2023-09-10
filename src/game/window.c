@@ -11,9 +11,43 @@
 
 #include "window.h"
 
+#include "../ui/metrics.h"
 #include "../config.h"
 #include "../utils.h"
+#include "../texts/text.h"
 #include "../lib/vector/vector.h"
+
+void console_log(struct Window *window, const char *msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    char buffer[1024];
+    vsnprintf(buffer, sizeof(buffer), msg, args);
+    va_end(args);
+    window->last_console_msg = realloc(window->last_console_msg, sizeof(char) * strlen(buffer) + 1);
+    sprintf(window->last_console_msg, "%s", buffer);
+    printf("%s\n", window->last_console_msg);
+}
+
+#define PREFIX "> "
+void render_last_msg(struct Window *window) {
+    if (window->stats_for_nerds_visible == 0) return;
+
+    const uint16 size = 16;
+    char *buf = malloc(sizeof(char) * strlen(PREFIX) + strlen(window->last_console_msg) + 1);
+    sprintf(buf, "%s%s", PREFIX, window->last_console_msg);
+
+    render_text((struct TextParams) {
+        .window = window,
+        .text = buf,
+        .ptsize = size,
+        .dst = &(SDL_Rect) {WINGAP, window->height - size - WINGAP},
+        .color = (SDL_Color) {0xff, 0xff, 0xff, 0xff},
+        .fontpath = "retro"
+    });
+
+    free(buf);
+}
+#undef PREFIX
 
 void window_fetch_position(struct Window *window) {
     SDL_GetWindowPosition(window->window, &window->x, &window->y);
@@ -80,6 +114,14 @@ struct Window *create_window(void) {
 
     ASSERT(window->hooks, "Couldn't allocate memory!\n");
 
+	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
+
+    #define DEFAULT_MSG "Logs will be printed here :)"
+    window->last_console_msg = malloc(sizeof(char) * strlen(DEFAULT_MSG) + 1);
+    window->stats_for_nerds_visible = 0;
+    sprintf(window->last_console_msg, "%s", DEFAULT_MSG);
+    #undef DEFAULT_MSG
+
     return window;
 }
 
@@ -98,7 +140,7 @@ void fetch_monitor_dimensions(struct Window *window, int *x, int *y) {
     *y = display_mode.h;
 }
 
-static void resolve_hook(struct Window *window, const char *signal, void *prm) {
+inline static void resolve_hook(struct Window *window, const char *signal, void *prm) {
     for (size_t i = 0; i < window->hooks_length; ++i) {
         HOOK_T(window) *hook = window->hooks[i];
         if (hook && strcmp(hook->id, signal) == 0) {
@@ -114,13 +156,6 @@ void window_refetch_dimensions(struct Window *window) {
         .x = window->width,
         .y = window->height
     }));
-
-    // FIXME: For some reason this macro is giving errors, so
-    // for now, let's switch into regular static functions...
-    // RESOLVE_HOOK(window, "window.dimensions::changed", (void*) (&(Vector2d) {
-    //     .x = window->width,
-    //     .y = window->height
-    // });
 }
 
 void window_toggle_fullscreen(struct Window *window) {
@@ -224,7 +259,8 @@ void window_switch_scene(struct Window *window, struct Scene *scene) {
 
 void window_register_hook(struct Window *window, HOOK_T(window) *hook) {
     #if defined(DEBUG_HOOKS)
-        printf("[WINDOW::DEBUG] Registering hook -> \"%s\" (%p)\n", hook->id, &hook->handler);
+        console_log(window, "[WINDOW::DEBUG] Registering hook -> \"%s\" (%p)",
+            hook->id, (void*) &hook->handler);
     #endif
 
     if (sizeof(HOOK_T(window)) * (++window->hooks_length) > sizeof(window->hooks)) {
@@ -278,7 +314,7 @@ void window_unregister_hook(struct Window *window, HOOK_T(window) *hook) {
     }
 
     #if defined(DEBUG_HOOKS)
-        printf("[WINDOW::DEBUG] Unregistered hook successfully, old id -> %s\n",
+        console_log(window, "[WINDOW::DEBUG] Unregistered hook successfully, old id -> %s",
             old_id);
     #endif
 
@@ -291,11 +327,12 @@ void destroy_window(struct Window *window) {
     for (size_t i = 0; i < window->hooks_length; ++i) {
         HOOK_T(window) *hook = window->hooks[i];
         #if defined(DEBUG_HOOKS)
-            printf("[WINDOW::DEBUG] Freeing hook -> \"%s\" (%p)\n", hook->id, (void*) &hook->handler);
+            console_log(window, "[WINDOW::DEBUG] Freeing hook -> \"%s\" (%p)", hook->id, (void*) &hook->handler);
         #endif
         free(hook);
     }
     free(window->hooks);
+    free(window->last_console_msg);
     free(window);
     Mix_CloseAudio();
     SDL_Quit();

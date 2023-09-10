@@ -3,6 +3,7 @@
 
 #include "../scene/scene.h"
 #include "../lib/vector/vector.h"
+#include "../utils.h"
 
 #pragma once
 
@@ -43,6 +44,15 @@ struct Window {
     // the current app ticks
     int ticks;
 
+    // the current app fps
+    int fps;
+
+    // the latest message printed in console. (debugging)
+    char *last_console_msg;
+
+    // defines if there should be shown the stats for nerd (specifically the console_log calls outputs)
+    uint16 stats_for_nerds_visible;
+
     // hooks: hooks is a concept that allows some parts of the game
     // manipulate or execute code when some event in the window
     // occurs, such as window dimensions changed, or mouse position changed.
@@ -79,18 +89,6 @@ struct Window {
 
 #define HOOK_T(window) __typeof__(*((window)->hooks[0]))
 
-// FIXME: For some reason, this macro is giving errors, so
-// for now, let's switch into a regular static function. see: window.c
-// and search for the function `resolve_hook`.
-
-// #define RESOLVE_HOOK(window, signal, prm)                         \
-//     for (size_t i = 0; i < (window)->hooks_length; ++i) {         \
-//         HOOK_T(window) *hook = (window)->hooks[i];                \
-//         if (hook && strcmp(hook->id, signal) == 0) {              \
-//             hook->handler((window), hook->meta, (prm));           \
-//         }                                                         \
-//     }
-
 struct Window *create_window(void);
 void window_toggle_fullscreen(struct Window *window);
 void window_scene_transition_splash(struct Window *window);
@@ -102,3 +100,5 @@ Vector2d window_get_mouse_coords_vec2d(struct Window *window);
 void window_register_hook(struct Window *window, HOOK_T(window) *hook);
 void window_unregister_hook(struct Window *window, HOOK_T(window) *hook);
 void destroy_window(struct Window *window);
+void console_log(struct Window *window, const char *msg, ...);
+void render_last_msg(struct Window *window);

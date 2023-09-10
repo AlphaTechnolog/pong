@@ -8,41 +8,64 @@
 #include "../config.h"
 #include "../game/window.h"
 #include "../scene/menu.h"
+#include "../ui/metrics.h"
 
 unsigned int quit = 0;
 unsigned int last_frame_time = 0;
+unsigned int frame_count = 0;
+unsigned int last_fps_update = 0;
 
+#if defined(DEBUG_ENABLE_METRICS)
+void handle_keys(struct Window *window, struct Metrics *metrics) {
+#else
 void handle_keys(struct Window *window) {
+#endif
     SDL_Event ev;
 
     while (SDL_PollEvent(&ev)) {
-        if (ev.type == SDL_QUIT) {
-            quit = 1;
-        }
+        if (ev.type == SDL_QUIT) quit = 1;
 
-        if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F11) {
+        if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F11)
             window_toggle_fullscreen(window);
-        }
+        if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_F3)
+            window->stats_for_nerds_visible = !window->stats_for_nerds_visible;
 
-        if (ev.type == SDL_WINDOWEVENT) {
+        if (ev.type == SDL_WINDOWEVENT)
             window_fetch_position(window);
-        }
 
-        if (ev.type == SDL_MOUSEMOTION) {
+        if (ev.type == SDL_MOUSEMOTION)
             window_fetch_mouse_coords(window, &ev);
-        }
 
         if (ev.type == SDL_WINDOWEVENT &&
             ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             window_refetch_dimensions(window);
         }
 
-        window->current_scene->handle_events(window, window->current_scene,
-                                             &ev);
+        window->current_scene->handle_events(window,
+            window->current_scene,
+            &ev);
+
+        #if defined(DEBUG_ENABLE_METRICS)
+            metrics_handle_events(metrics, &ev);
+        #endif
     }
 }
 
-void fps_capping(void) {
+static void update_fps(struct Window *window) {
+    int current_time = SDL_GetTicks();
+    int elapsed_time = current_time - last_fps_update;
+
+    if (elapsed_time >= 1000) {
+        window->fps = frame_count / (elapsed_time / 1000.0);
+        frame_count = 0;
+        last_fps_update = current_time;
+    }
+}
+
+void fps_capping(struct Window *window) {
+    frame_count++;
+    update_fps(window);
+
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
 
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
@@ -77,13 +100,29 @@ void game_loop(struct Window *window) {
         window_toggle_fullscreen(window);
     #endif
 
+    #if defined(DEBUG_ENABLE_METRICS)
+        struct Metrics *metrics = create_metrics(window);
+    #endif
+
     while (quit == 0) {
-        handle_keys(window);
-        fps_capping();
+        #if defined(DEBUG_ENABLE_METRICS)
+            handle_keys(window, metrics);
+        #else
+            handle_keys(window);
+        #endif
+        fps_capping(window);
         pre_update(window);
+        #if defined(DEBUG_ENABLE_METRICS)
+            render_metrics(metrics);
+            render_last_msg(window);
+        #endif
         render_scene(window);
         post_update(window);
     }
 
     window->current_scene->destroy(window, window->current_scene);
+
+    #if defined(DEBUG_ENABLE_METRICS)
+        destroy_metrics(metrics);
+    #endif
 }

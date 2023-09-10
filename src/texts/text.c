@@ -54,9 +54,8 @@ void render_text_texture(struct Window *window, SDL_Texture *texture, SDL_Rect d
 		&dst);
 }
 
-void render_text(struct TextParams prms, SDL_Rect dst) {
+void render_text(struct TextParams prms) {
 	SDL_Texture *texture = fetch_text_texture(prms);
-	render_text_texture(prms.window, texture, dst);
+	render_text_texture(prms.window, texture, *prms.dst);
 	SDL_DestroyTexture(texture);
 }
-

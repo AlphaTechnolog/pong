@@ -31,6 +31,7 @@ struct Bar {
 	Vector2d size;
 	SDL_Rect collider;
 	uint128 score;
+	uint16 show_debug_colliders;
 
 	struct Window *window;
 

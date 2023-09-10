@@ -1,3 +1,4 @@
+#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_render.h>
 
@@ -64,7 +65,16 @@ struct Ball *create_ball(struct Window *window, struct Bar **bars) {
 
     update_collider(ball);
 
+    ball->soundeffects = malloc(sizeof(Mix_Chunk*) * BALL_MAX_SOUNDEFFECTS);
+    ball->soundeffects[BALL_SOUNDEFFECTS_REBOUND] = load_soundeffect("ball-rebound");
+    ball->soundeffects[BALL_SOUNDEFFECTS_BAR_TOUCH] = load_soundeffect("bar-touch");
+    ball->soundeffects[BALL_SOUNDEFFECTS_SCORE] = load_soundeffect("score");
+
     return ball;
+}
+
+inline static void play_soundeffect(struct Ball *ball, uint16 index) {
+    start_soundeffect(ball->soundeffects[index]);
 }
 
 // colliders shouldn't be so near to the real object so the user
@@ -72,31 +82,30 @@ struct Ball *create_ball(struct Window *window, struct Bar **bars) {
 #define OFFSET 20
 
 inline static void render_collider_boxes(struct Ball *ball, struct Bar *bar) {
-    SDL_Rect dst = {
-        .x = bar->pos.x,
-        .y = bar->pos.y - OFFSET,
-        .w = bar->size.x,
-        .h = bar->size.y + OFFSET * 2
-    };
+    SDL_Rect dst = {bar->pos.x, bar->pos.y - OFFSET, bar->size.x,
+        bar->size.y + OFFSET * 2};
 
     // green box
     SDL_SetRenderDrawColor(ball->window->renderer, 0x31, 0xde, 0x37, 0xff);
     SDL_RenderDrawRect(ball->window->renderer, &dst);
 }
 
+#define COLLISION_Y(ball, bar)                              \
+    (ball)->pos.y >= (bar)->pos.y - OFFSET &&               \
+    (ball)->pos.y <= (bar)->pos.y + (bar)->size.y + OFFSET
+
 static int check_left_bar_collision(struct Ball *ball, struct Bar *left_bar) {
     return ball->pos.x <= left_bar->pos.x + left_bar->size.x &&
-        ball->pos.y >= left_bar->pos.y - OFFSET &&
-        ball->pos.y <= left_bar->pos.y + left_bar->size.y + OFFSET;
+        COLLISION_Y(ball, left_bar);
 }
 
 static int check_right_bar_collision(struct Ball *ball, struct Bar *right_bar) {
     return ball->pos.x + ball->size.x >= right_bar->pos.x &&
-        ball->pos.y >= right_bar->pos.y - OFFSET &&
-        ball->pos.y <= right_bar->pos.y + right_bar->size.y + OFFSET;
+        COLLISION_Y(ball, right_bar);
 }
 
 #undef OFFSET
+#undef COLLISION_Y
 
 static int is_at_top_mid(struct Ball *ball, struct Bar *bar) {
     return ball->pos.y <= bar->pos.y + (bar->size.y / 2);
@@ -114,7 +123,7 @@ static void fill_bars(struct Ball *ball, struct Bar *left_bar, struct Bar *right
 inline static void increase_velocity(struct Ball *ball, float factor) {
     ball->velocity += factor;
     #if defined(DEBUG_BALL_VELOCITY)
-        printf("[BALL::DEBUG] new velocity -> %f\n", ball->velocity);
+        console_log(ball->window, "[BALL::DEBUG] new velocity -> %.2f", ball->velocity);
     #endif
 }
 
@@ -133,14 +142,14 @@ static void check_rebound(struct Ball *ball) {
     if (check_left_bar_collision(ball, &left_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_RIGHT;
         increase_velocity(ball, 0.25f);
-        load_soundeffect("bar-touch");
+        play_soundeffect(ball, BALL_SOUNDEFFECTS_BAR_TOUCH);
         invert_vert_dir(ball, &left_bar);
     }
 
     if (check_right_bar_collision(ball, &right_bar)) {
         ball->dir.horizontal_dir = BALL_DIR_LEFT;
         increase_velocity(ball, 0.25f);
-        load_soundeffect("bar-touch");
+        play_soundeffect(ball, BALL_SOUNDEFFECTS_BAR_TOUCH);
         invert_vert_dir(ball, &right_bar);
     }
 }
@@ -162,7 +171,7 @@ static void invert_ball_dir(struct Ball *ball, const char *dir) {
 static void score_to(struct Bar *bar) {
     bar->score++;
     #if defined(DEBUG_BAR_SCORING)
-        printf("[BAR::DEBUG] Scoring bar (%p) with id == %s (%f, %f). Score = %llu\n",
+        console_log(bar->window, "[BAR::DEBUG] Scoring bar (%p) with id == %s (%f, %f). Score = %llu",
             (void*) &bar, bar->id, bar->pos.x, bar->pos.y, bar->score);
     #endif
 }
@@ -189,13 +198,13 @@ inline static void after_scoring(struct Ball *ball) {
 static void check_point(struct Ball *ball) {
     if (ball->pos.x <= WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_RIGHT));
-        load_soundeffect("score");
+        play_soundeffect(ball, BALL_SOUNDEFFECTS_SCORE);
         after_scoring(ball);
     }
 
     if (ball->pos.x + ball->size.x >= ball->window->width - WINGAP) {
         score_to(find_bar(ball->bars, BAR_ID_LEFT));
-        load_soundeffect("score");
+        play_soundeffect(ball, BALL_SOUNDEFFECTS_SCORE);
         after_scoring(ball);
     }
 }
@@ -203,12 +212,12 @@ static void check_point(struct Ball *ball) {
 static void check_out_of_bounds(struct Ball *ball) {
     if (ball->pos.y <= 0) {
         invert_ball_dir(ball, ball->dir.vertical_dir);
-        load_soundeffect("ball-rebound");
+        play_soundeffect(ball, BALL_SOUNDEFFECTS_REBOUND);
     }
 
     if (ball->pos.y + ball->size.y >= ball->window->height) {
         invert_ball_dir(ball, ball->dir.vertical_dir);
-        load_soundeffect("ball-rebound");
+        play_soundeffect(ball, BALL_SOUNDEFFECTS_REBOUND);
     }
 
     check_point(ball);
@@ -234,7 +243,8 @@ static void update_movement(struct Ball *ball) {
 void ball_render(struct Ball *ball) {
     #if defined(RENDER_COLLIDERS_BOXES)
         for (size_t i = 0; i < MAX_BALL_BARS; ++i)
-            render_collider_boxes(ball, ball->bars[i]);
+            if (ball->bars[i]->show_debug_colliders == 1)
+                render_collider_boxes(ball, ball->bars[i]);
     #endif
 
     // check invisibility
@@ -251,6 +261,9 @@ void ball_render(struct Ball *ball) {
 }
 
 void ball_destroy(struct Ball *ball) {
+    for (size_t i = 0; i < BALL_MAX_SOUNDEFFECTS; ++i)
+        stop_soundeffect(ball->soundeffects[i]);       
+    free(ball->soundeffects);
     free(ball->bars);
     free(ball);
 }

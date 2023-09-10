@@ -26,6 +26,10 @@ struct Bar *create_bar(struct Window *window, char *id) {
 	bar->score = 0;
 	bar->id = id;
 
+	#if defined(RENDER_COLLIDERS_BOXES)
+		bar->show_debug_colliders = 0;
+	#endif
+
 	bar->size = (Vector2d) {
 		.x = 15,
 		.y = 120
@@ -51,7 +55,12 @@ void bar_handle_movement(struct Bar *bar) {
 	}
 
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-	const uint16 ACC = 12;
+
+	#if defined(DEFAULT_BALL_ACC)
+		const uint16 ACC = DEFAULT_BALL_ACC + 6;
+	#else
+		const uint16 ACC = 10;
+	#endif
 
 	if (keystate[bar_control_up->scancode]) bar->pos.y -= ACC;
 	if (keystate[bar_control_down->scancode]) bar->pos.y += ACC;

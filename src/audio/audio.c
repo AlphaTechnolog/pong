@@ -24,7 +24,6 @@ static char *soundtrack_resolve_filename(const char *partial_filename) {
 Mix_Music *load_soundtrack_faded(const char *filename) {
 	char *file = soundtrack_resolve_filename(filename);
 
-	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
 	Mix_Music *music = Mix_LoadMUS(file);
 	Mix_FadeInMusic(music, -1, 3200);
 	free(file);
@@ -52,14 +51,13 @@ static char *soundeffect_resolve_filename(const char *partial_filename) {
 
 Mix_Chunk *load_soundeffect(const char *filename) {
 	char *file = soundeffect_resolve_filename(filename);
-
-	Mix_OpenAudio(22050, AUDIO_S16SYS, 2, 640);
 	Mix_Chunk *chunk = Mix_LoadWAV(file);
-
-	ASSERT(Mix_PlayChannel(-1, chunk, 0) >= 0, "Can't play soundeffect %s\n",
-		filename);
-
+	free(file);
 	return chunk;
+}
+
+void start_soundeffect(Mix_Chunk *chunk) {
+	ASSERT(Mix_PlayChannel(-1, chunk, 0) >= 0, "Can't play sound effect\n");
 }
 
 void stop_soundeffect(Mix_Chunk *chunk) {

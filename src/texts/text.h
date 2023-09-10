@@ -3,6 +3,7 @@
 #include <SDL2/SDL_stdinc.h>
 
 #include "../game/window.h"
+#include "../utils.h"
 
 #pragma once
 
@@ -17,4 +18,4 @@ struct TextParams {
 
 SDL_Texture *fetch_text_texture(struct TextParams prms);
 void render_text_texture(struct Window *window, SDL_Texture *texture, SDL_Rect dst);
-void render_text(struct TextParams prms, SDL_Rect dst);
+void render_text(struct TextParams prms);
