@@ -15,10 +15,10 @@
 #define WINGAP 12
 
 // debugging configuration
-// #define DEBUG_HOOKS
-// #define DEBUG_BAR_SCORING
-// #define DEBUG_BALL_VELOCITY
-// #define DEBUG_ENABLE_METRICS
+#define DEBUG_HOOKS
+#define DEBUG_BAR_SCORING
+#define DEBUG_BALL_VELOCITY
+#define DEBUG_ENABLE_METRICS
 
 // draw colliders for bars? (players)
-// #define RENDER_COLLIDERS_BOXES
+#define RENDER_COLLIDERS_BOXES
