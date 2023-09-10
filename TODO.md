@@ -1,0 +1,2 @@
+- Adding scores to the main scene
+- Adding decorative midlines in the main scene
