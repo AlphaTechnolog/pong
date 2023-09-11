@@ -27,23 +27,10 @@ APPNAME := pong
 
 .PHONY: all clean
 
-all: dirs prepare game
+all: dirs game
 
 dirs:
 	@mkdir -p $(BIN)
-
-cjson_prepare:
-	@echo "Preparing -> cjson"
-	@rm src/lib/extern/cJSON/test.c
-
-src/lib/extern/cJSON: cjson_prepare
-
-prepareinit:
-	git submodule init
-	git submodule update
-
-prepare: prepareinit src/lib/extern/cJSON
-	@echo "Done preparing."
 
 run: all
 	@echo "Run 		$(BIN)/$(APPNAME)"
