@@ -16,7 +16,7 @@
 #include "../config.h"
 #include "../utils.h"
 
-static void update_collider(struct Ball *ball) {
+inline static void update_collider(struct Ball *ball) {
     ball->collider = (SDL_Rect) {
         .x = ball->pos.x,
         .y = ball->pos.y,
@@ -94,12 +94,12 @@ inline static void render_collider_boxes(struct Ball *ball, struct Bar *bar) {
     (ball)->pos.y >= (bar)->pos.y - OFFSET &&               \
     (ball)->pos.y <= (bar)->pos.y + (bar)->size.y + OFFSET
 
-static int check_left_bar_collision(struct Ball *ball, struct Bar *left_bar) {
+inline static int check_left_bar_collision(struct Ball *ball, struct Bar *left_bar) {
     return ball->pos.x <= left_bar->pos.x + left_bar->size.x &&
         COLLISION_Y(ball, left_bar);
 }
 
-static int check_right_bar_collision(struct Ball *ball, struct Bar *right_bar) {
+inline static int check_right_bar_collision(struct Ball *ball, struct Bar *right_bar) {
     return ball->pos.x + ball->size.x >= right_bar->pos.x &&
         COLLISION_Y(ball, right_bar);
 }
@@ -107,7 +107,7 @@ static int check_right_bar_collision(struct Ball *ball, struct Bar *right_bar) {
 #undef OFFSET
 #undef COLLISION_Y
 
-static int is_at_top_mid(struct Ball *ball, struct Bar *bar) {
+inline static int is_at_top_mid(struct Ball *ball, struct Bar *bar) {
     return ball->pos.y <= bar->pos.y + (bar->size.y / 2);
 }
 
