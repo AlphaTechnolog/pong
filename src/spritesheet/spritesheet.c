@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <cjson/cJSON.h>
+
+#include "../lib/extern/cJSON/cJSON.h"
 
 #include "spritesheet.h"
 #include "../utils.h"
