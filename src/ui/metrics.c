@@ -79,16 +79,18 @@ struct Metrics *create_metrics(struct Window *window) {
     return metrics;
 }
 
+#define ACTION_T __typeof__(actions[0])
 void render_metrics(struct Metrics *metrics) {
     STOP();
 
     if (metrics->invisible == 1) return;
 
     for (size_t i = 0; i < MAX_ACTIONS; ++i) {
-        __typeof__(actions[0]) action = actions[i];
+        ACTION_T action = actions[i];
         action.render(WINGAP * i * (i > 0 ? 2 : 1), metrics);
     }
 }
+#undef ACTIONS_T
 
 void metrics_handle_events(struct Metrics *metrics, SDL_Event *ev) {
     if (ev->key.keysym.sym == SDLK_F3 && ev->type == SDL_KEYDOWN) {
