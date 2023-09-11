@@ -9,15 +9,16 @@ CFLAGS += -Wno-gnu-compound-literal-initializer -Wno-gnu-zero-variadic-macro-arg
 CFLAGS += -I extern/include -L extern/lib
 
 LDFLAGS := -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
-LDFLAGS += -I extern/include -L extern/lib
 
 ifeq ($(UNAME_S), Linux)
 	LDFLAGS += -lm
 endif
 
-ifeq ($(MINGW), MINGW)
+ifeq ($(MINGW), 5)
 	LDFLAGS += -lmingw32
 endif
+
+LDFLAGS += -I extern/include -L extern/lib
 
 SRC := $(wildcard src/**/*.c) $(wildcard src/*.c) $(wildcard src/**/**/*.c) $(wildcard src/**/**/**/*.c)
 OBJ := $(SRC:.c=.o)
@@ -30,33 +31,16 @@ APPNAME := pong
 all: dirs game
 
 dirs:
-	@mkdir -p $(BIN)
+	mkdir -p $(BIN)
 
 run: all
-	@echo "Run 		$(BIN)/$(APPNAME)"
-	@$(BIN)/$(APPNAME)
+	$(BIN)/$(APPNAME)
 
 game: $(OBJ)
-	@echo "Bin 		$(BIN)/$(APPNAME)"
-	@$(CC) -o $(BIN)/$(APPNAME) $^ $(LDFLAGS)
+	$(CC) -o $(BIN)/$(APPNAME) $^ $(LDFLAGS)
 
 %.o: %.c
-	@echo "CC		$@"
-	@$(CC) -o $@ -c $< $(CFLAGS)
+	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	@echo "Clean"
-	@rm -rf $(BIN) $(OBJ)
-
-build: all
-	@echo "Bundling build.zip."
-	@mkdir -p ./build
-	@echo "=> Copying files to the build directory"
-	@cp -rvf ./bin/* ./build
-	@cp -rvf ./sprites/ ./build
-	@cp -rvf ./fonts ./build
-	@cp -rvf ./music ./build
-	@echo "=> Bundling into a zip"
-	@zip -rv build{.zip,}
-	@echo "* Done!"
-	@rm -rf ./build
+	rm -rf $(BIN) $(OBJ)
