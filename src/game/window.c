@@ -271,7 +271,25 @@ void window_register_hook(struct Window *window, HOOK_T(window) *hook) {
     window->hooks[window->hooks_length - 1] = hook;
 }
 
-// FIXME: See the comment starting at 261-264
+// a shortcut to register hooks easily
+// example of usage:
+// ```c
+// def_winhook(entity->window, &(HOOK_T(entity->window)) {
+//     .id = "window.dimensions::changed",
+//     .meta = entity,
+//     .handler = on_dimensions_change
+// });
+// ```
+void def_winhook(struct Window *window, void *metahook) {
+    HOOK_T(window) *hook = malloc(sizeof(HOOK_T(window)));
+    HOOK_T(window) *meta = (HOOK_T(window)*) metahook;
+    hook->id = meta->id;
+    hook->meta = meta->meta;
+    hook->handler = meta->handler;
+    window_register_hook(window, hook);
+}
+
+// FIXME: See the comment starting at the body of this function.
 void window_unregister_hook(struct Window *window, HOOK_T(window) *hook) {
     size_t hook_index = -1;
     for (size_t i = 0; i < window->hooks_length; ++i) {

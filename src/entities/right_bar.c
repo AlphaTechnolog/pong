@@ -6,9 +6,10 @@
 #include "../config.h"
 
 // re positionates the right bar `pos` vector when resizing the window object.
-void right_bar_on_window_dimensions_change(struct Window *window, void *meta, void *prm) {
+static void on_dimensions_change(struct Window *window, void *meta, void *prm) {
     struct Bar *right_bar = (struct Bar *) meta;
-    right_bar->pos.x = right_bar->window->width - WINGAP - right_bar->size.x;
+    Vector2d *size = (Vector2d *) prm;
+    right_bar->pos.x = size->x - WINGAP - right_bar->size.x;
 }
 
 struct Bar *create_right_bar(struct Window *window) {
@@ -21,13 +22,13 @@ struct Bar *create_right_bar(struct Window *window) {
 
     DEFCONTROLS(right_bar, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN);
 
-    HOOK_T(right_bar->window) *hook = malloc(sizeof(HOOK_T(right_bar->window)));
-
-    hook->id = "window.dimensions::changed";
-    hook->meta = (void*) right_bar;
-    hook->handler = right_bar_on_window_dimensions_change;
-
-    window_register_hook(right_bar->window, hook);
+    // subscribing to the window dimensions in order to make the position responsive
+    // per device (well, mostly when going no fullscreen).
+    def_winhook(right_bar->window, &(HOOK_T(right_bar->window)) {
+        .id = "window.dimensions::changed",
+        .meta = right_bar,
+        .handler = on_dimensions_change
+    });
 
     return right_bar;
 }

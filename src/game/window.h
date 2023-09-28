@@ -98,6 +98,7 @@ void window_refetch_dimensions(struct Window *window);
 void window_fetch_mouse_coords(struct Window *window, SDL_Event *ev);
 Vector2d window_get_mouse_coords_vec2d(struct Window *window);
 void window_register_hook(struct Window *window, HOOK_T(window) *hook);
+void def_winhook(struct Window *window, void *metahook);
 void window_unregister_hook(struct Window *window, HOOK_T(window) *hook);
 void destroy_window(struct Window *window);
 void console_log(struct Window *window, const char *msg, ...);
