@@ -17,6 +17,13 @@
 #include "../texts/text.h"
 #include "../lib/vector/vector.h"
 
+static inline void realloc_check(void *ptr) {
+    if (ptr == NULL) {
+        perror("realloc()");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void console_log(struct Window *window, const char *msg, ...) {
     va_list args;
     va_start(args, msg);
@@ -24,6 +31,7 @@ void console_log(struct Window *window, const char *msg, ...) {
     vsnprintf(buffer, sizeof(buffer), msg, args);
     va_end(args);
     window->last_console_msg = realloc(window->last_console_msg, sizeof(char) * strlen(buffer) + 1);
+    realloc_check(window->last_console_msg);
     sprintf(window->last_console_msg, "%s", buffer);
     printf("%s\n", window->last_console_msg);
 }

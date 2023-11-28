@@ -1,5 +1,3 @@
-CC := gcc
-
 UNAME_S = $(shell uname -s)
 MINGW := $(shell expr "$(UNAME_S)" : 'MINGW')
 
