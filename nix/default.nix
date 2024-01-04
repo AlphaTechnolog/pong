@@ -19,7 +19,14 @@ stdenv.mkDerivation {
   ];
 
   installPhase = ''
-    mkdir -pv $out/bin
-    install -Dvm755 ./bin/* $out/bin/
+    mkdir -pv $out/bin $out/share
+    cp -rvf ./bin/* $out/share
+    for i in sprites fonts music; do cp -rvf $i $out/share; done
+    cat << EOF >> $out/bin/pong
+    #!${pkgs.bash}/bin/bash
+    cd $out/share
+    ./pong ''${@}
+    EOF
+    chmod +x $out/bin/pong
   '';
 }
