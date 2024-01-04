@@ -6,7 +6,7 @@ CFLAGS += -Wno-pointer-arith -Wno-unused-parameter -Wno-newline-eof -Wno-unused-
 CFLAGS += -Wno-gnu-compound-literal-initializer -Wno-gnu-zero-variadic-macro-arguments
 CFLAGS += -I extern/include -L extern/lib
 
-LDFLAGS := -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
+LDFLAGS := -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf
 
 ifeq ($(UNAME_S), Linux)
 	LDFLAGS += -lm
