@@ -8,17 +8,17 @@
 // general behavior
 #define FPS 60
 #define FRAME_TARGET_TIME (1000 / FPS)
-#define FULLSCREEN_BY_DEFAULT
 #define DEFAULT_BALL_ACC 10
+// #define FULLSCREEN_BY_DEFAULT
 
 // ui configuration
 #define WINGAP 12
 
 // debugging configuration
-#define DEBUG_HOOKS
-#define DEBUG_BAR_SCORING
-#define DEBUG_BALL_VELOCITY
-#define DEBUG_ENABLE_METRICS
+// #define DEBUG_HOOKS
+// #define DEBUG_BAR_SCORING
+// #define DEBUG_BALL_VELOCITY
+// #define DEBUG_ENABLE_METRICS
 
 // draw colliders for bars? (players)
-#define RENDER_COLLIDERS_BOXES
+// #define RENDER_COLLIDERS_BOXES
